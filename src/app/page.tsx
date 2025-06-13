@@ -412,7 +412,10 @@ export default function Home() {
         )}
         <div
           className="circle player"
-          style={{ top: `${player.y * 10}%`, left: `${player.x * 10}%` }}
+          style={{
+            top: `${(player.y + 0.5) * 10}%`,
+            left: `${(player.x + 0.5) * 10}%`,
+          }}
         />
       </div>
 
