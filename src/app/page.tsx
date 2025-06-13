@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { findPath } from '../lib/pathfinding';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import type { Tile } from '../lib/types';
@@ -16,6 +17,7 @@ export default function Home() {
   const [currentMap, setCurrentMap] = useState('map01');
   const [grid, setGrid] = useState<Tile[][]>(maps[currentMap]);
   const [player, setPlayer] = useState({ x: 1, y: 1 });
+  const [path, setPath] = useState<{ x: number; y: number }[]>([]);
 
   useEffect(() => {
     setGrid(maps[currentMap]);
@@ -88,26 +90,38 @@ export default function Home() {
 
   const handleClick = useCallback(
     (tile: Tile, isDouble = false) => {
-      const dx = Math.abs(tile.x - player.x);
-      const dy = Math.abs(tile.y - player.y);
-      const isAdjacent = dx + dy === 1;
-
       if (isDouble && tile.type === 'NPC' && tile.dialogueId) {
         setDialogue(`NPC says: "This isn't the beginning. It's before that."`);
         return;
       }
 
-      if (tile.type === 'DOOR' && isAdjacent && tile.destination) {
-        setCurrentMap(tile.destination);
-        return;
-      }
-
-      if (tile.type === 'GROUND' && isAdjacent) {
-        setPlayer({ x: tile.x, y: tile.y });
+      if (tile.type === 'GROUND' || tile.type === 'DOOR') {
+        const newPath = findPath(grid, player, { x: tile.x, y: tile.y });
+        if (newPath.length > 0) {
+          setPath(newPath);
+        }
       }
     },
-    [player]
+    [player, grid]
   );
+
+  // Step along the current path
+  useEffect(() => {
+    if (path.length === 0) return;
+    const timer = setTimeout(() => {
+      const [next, ...rest] = path;
+      setPlayer(next);
+      setPath(rest);
+
+      if (rest.length === 0) {
+        const tile = grid[next.y]?.[next.x];
+        if (tile && tile.type === 'DOOR' && tile.destination) {
+          setCurrentMap(tile.destination);
+        }
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [path, grid, setCurrentMap]);
 
   // Save player position whenever it changes
   useEffect(() => {
