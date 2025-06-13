@@ -174,7 +174,6 @@ export default function Home() {
       <div className="grid">
         {grid.map((row) =>
           row.map((tile) => {
-            const isPlayer = tile.x === player.x && tile.y === player.y;
 
             return (
               <div
@@ -196,15 +195,18 @@ export default function Home() {
               >
                 {tile.type === 'NPC' && (
                   <div
-                    className="circle"
+                    className="circle npc"
                     style={{ backgroundColor: tile.npcColor || 'blue' }}
                   />
                 )}
-                {isPlayer && <div className="circle player" />}
               </div>
             );
           })
         )}
+        <div
+          className="circle player"
+          style={{ top: `${player.y * 10}%`, left: `${player.x * 10}%` }}
+        />
       </div>
 
       {dialogue && (

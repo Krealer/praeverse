@@ -30,8 +30,10 @@ h1.title {
 
 /* Grid system */
 .grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
   gap: 3px;
   width: 90vmin;
   max-width: 450px;
@@ -41,6 +43,7 @@ h1.title {
   border-radius: 12px;
   padding: 5px;
   box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+  animation: fadeIn 0.4s ease;
 }
 
 /* Tile base */
@@ -64,12 +67,16 @@ h1.title {
   background-color: #888;
 }
 
+
 .tile.wall {
   background-color: #222;
+  background-image: linear-gradient(to bottom, #333, #111);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 .tile.door {
-  background-color: purple;
+  background-color: #9b2aff;
+  box-shadow: 0 0 8px rgba(155, 42, 255, 0.8);
 }
 
 .tile.npc {
@@ -84,6 +91,23 @@ h1.title {
   background-color: #555;
   box-shadow: 0 0 4px rgba(255, 255, 255, 0.1);
   transition: background-color 0.2s;
+}
+
+.circle.npc {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.circle.player {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 7%;
+  height: 7%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: top 0.25s ease, left 0.25s ease;
+  pointer-events: none;
 }
 
 .player {
@@ -122,6 +146,8 @@ h1.title {
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s;
+  min-height: 44px;
+  margin: 0.2rem 0;
 }
 
 .menu-screen button:hover {
@@ -157,11 +183,21 @@ h1.title {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
   }
 }
