@@ -3,54 +3,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
+import type { Tile } from '../lib/types';
+import map01 from '../maps/map01';
+import map02 from '../maps/map02';
 
-type TileType = 'GROUND' | 'WALL' | 'NPC';
-
-interface Tile {
-  x: number;
-  y: number;
-  type: TileType;
-  npcColor?: string;
-  dialogueId?: string;
-}
-
-const gridSize = 10;
-
-const createGrid = (): Tile[][] => {
-  const grid: Tile[][] = [];
-
-  for (let y = 0; y < gridSize; y++) {
-    const row: Tile[] = [];
-    for (let x = 0; x < gridSize; x++) {
-      if (
-        x === 0 || y === 0 || x === gridSize - 1 || y === gridSize - 1 ||
-        (x === 5 && y !== 2)
-      ) {
-        row.push({ x, y, type: 'WALL' });
-      } else if (x === 3 && y === 3) {
-        row.push({
-          x,
-          y,
-          type: 'NPC',
-          npcColor: '#2aa',
-          dialogueId: 'npc_1',
-        });
-      } else {
-        row.push({ x, y, type: 'GROUND' });
-      }
-    }
-    grid.push(row);
-  }
-
-  return grid;
-};
+const maps: Record<string, Tile[][]> = { map01, map02 };
 
 export default function Home() {
   const [menuVisible, setMenuVisible] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
   const [dialogue, setDialogue] = useState<string | null>(null);
-  const [grid] = useState<Tile[][]>(createGrid());
+  const [currentMap, setCurrentMap] = useState('map01');
+  const [grid, setGrid] = useState<Tile[][]>(maps[currentMap]);
   const [player, setPlayer] = useState({ x: 1, y: 1 });
+
+  useEffect(() => {
+    setGrid(maps[currentMap]);
+  }, [currentMap]);
 
   // Restore saved player position on first load
   useEffect(() => {
@@ -103,20 +72,29 @@ export default function Home() {
     setUser(null);
   };
 
-  const handleClick = useCallback((tile: Tile, isDouble = false) => {
-    const dx = Math.abs(tile.x - player.x);
-    const dy = Math.abs(tile.y - player.y);
-    const isAdjacent = dx + dy === 1;
+  const handleClick = useCallback(
+    (tile: Tile, isDouble = false) => {
+      const dx = Math.abs(tile.x - player.x);
+      const dy = Math.abs(tile.y - player.y);
+      const isAdjacent = dx + dy === 1;
 
-    if (isDouble && tile.type === 'NPC' && tile.dialogueId) {
-      setDialogue(`NPC says: "This isn't the beginning. It's before that."`);
-      return;
-    }
+      if (isDouble && tile.type === 'NPC' && tile.dialogueId) {
+        setDialogue(`NPC says: "This isn't the beginning. It's before that."`);
+        return;
+      }
 
-    if (tile.type === 'GROUND' && isAdjacent) {
-      setPlayer({ x: tile.x, y: tile.y });
-    }
-  }, [player]);
+      if (tile.type === 'DOOR' && isAdjacent && tile.destination) {
+        setCurrentMap(tile.destination);
+        setPlayer({ x: 1, y: 1 });
+        return;
+      }
+
+      if (tile.type === 'GROUND' && isAdjacent) {
+        setPlayer({ x: tile.x, y: tile.y });
+      }
+    },
+    [player]
+  );
 
   // Save player position whenever it changes
   useEffect(() => {
@@ -181,6 +159,8 @@ export default function Home() {
                       ? '#999'
                       : tile.type === 'WALL'
                       ? '#333'
+                      : tile.type === 'DOOR'
+                      ? 'purple'
                       : undefined,
                 }}
                 onClick={() => handleClick(tile)}
