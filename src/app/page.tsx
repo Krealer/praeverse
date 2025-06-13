@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
@@ -55,7 +55,6 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState('');
 
-  // Load current user and handle auth changes
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
@@ -86,7 +85,7 @@ export default function Home() {
     setUser(null);
   };
 
-  const handleClick = (tile: Tile, isDouble = false) => {
+  const handleClick = useCallback((tile: Tile, isDouble = false) => {
     const dx = Math.abs(tile.x - player.x);
     const dy = Math.abs(tile.y - player.y);
     const isAdjacent = dx + dy === 1;
@@ -99,19 +98,19 @@ export default function Home() {
     if (tile.type === 'GROUND' && isAdjacent) {
       setPlayer({ x: tile.x, y: tile.y });
     }
-  };
+  }, [player]);
 
   if (menuVisible) {
     return (
       <div className="menu-screen">
         <h1 className="title">Praeverse</h1>
-        <button onClick={() => setMenuVisible(false)}>▶ Play</button>
-        <button onClick={() => setShowHelp(true)}>📖 How to Play</button>
+        <button onClick={() => setMenuVisible(false)} aria-label="Start Game">▶ Play</button>
+        <button onClick={() => setShowHelp(true)} aria-label="How to Play">📖 How to Play</button>
 
         {user ? (
           <>
             <p>Logged in as: {user.email}</p>
-            <button onClick={handleLogout}>🚪 Log Out</button>
+            <button onClick={handleLogout} aria-label="Log Out">🚪 Log Out</button>
           </>
         ) : (
           <>
@@ -122,7 +121,7 @@ export default function Home() {
               onChange={(e) => setEmail(e.target.value)}
               className="menu-input"
             />
-            <button onClick={handleLogin}>🔐 Send Magic Link</button>
+            <button onClick={handleLogin} aria-label="Send Magic Link">🔐 Send Magic Link</button>
           </>
         )}
 
@@ -134,7 +133,7 @@ export default function Home() {
               <li>Double tap a colored circle (NPC) to interact.</li>
               <li>Dark tiles are walls — they block movement.</li>
             </ul>
-            <button onClick={() => setShowHelp(false)}>Close</button>
+            <button onClick={() => setShowHelp(false)} aria-label="Close Help">Close</button>
           </div>
         )}
       </div>
@@ -163,6 +162,7 @@ export default function Home() {
                 }}
                 onClick={() => handleClick(tile)}
                 onDoubleClick={() => handleClick(tile, true)}
+                tabIndex={0}
               >
                 {tile.type === 'NPC' && (
                   <div
@@ -180,7 +180,7 @@ export default function Home() {
       {dialogue && (
         <div className="dialogue">
           {dialogue}
-          <button onClick={() => setDialogue(null)}>Close</button>
+          <button onClick={() => setDialogue(null)} aria-label="Close Dialogue">Close</button>
         </div>
       )}
     </main>
