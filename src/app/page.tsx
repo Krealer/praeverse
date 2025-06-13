@@ -1,27 +1,96 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { findPath } from '../lib/pathfinding';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import type { Tile } from '../lib/types';
 import map01 from '../maps/map01';
 import map02 from '../maps/map02';
+import {
+  Settings,
+  SaveData,
+  SettingsPanel,
+  ItemsPanel,
+  SavePanel,
+  LoadPanel,
+} from './components/Panels';
 
 const maps: Record<string, Tile[][]> = { map01, map02 };
 
 export default function Home() {
   const [menuVisible, setMenuVisible] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
-  const [dialogue, setDialogue] = useState<string | null>(null);
+  const [displayDialogue, setDisplayDialogue] = useState<string | null>(null);
   const [currentMap, setCurrentMap] = useState('map01');
   const [grid, setGrid] = useState<Tile[][]>(maps[currentMap]);
   const [player, setPlayer] = useState({ x: 1, y: 1 });
   const [path, setPath] = useState<{ x: number; y: number }[]>([]);
+  const [items, setItems] = useState<string[]>([]);
+  const defaultSettings = useMemo<Settings>(
+    () => ({
+      movement: 'normal',
+      language: 'en',
+      showLabels: false,
+      animateDialogue: true,
+    }),
+    []
+  );
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [activePanel, setActivePanel] = useState<
+    'settings' | 'items' | 'save' | 'load' | null
+  >(null);
+  const [saves, setSaves] = useState<(SaveData | null)[]>([null, null, null]);
+  const [user, setUser] = useState<User | null>(null);
+  const [email, setEmail] = useState('');
+  const movementDelay =
+    settings.movement === 'slow' ? 400 : settings.movement === 'fast' ? 100 : 200;
 
   useEffect(() => {
     setGrid(maps[currentMap]);
   }, [currentMap]);
+
+  // Load saves from localStorage when not logged in
+  useEffect(() => {
+    if (user) return;
+    const arr: (SaveData | null)[] = [null, null, null];
+    [1, 2, 3].forEach((slot) => {
+      try {
+        const raw = localStorage.getItem(`praeverse_slot_${slot}`);
+        if (raw) arr[slot - 1] = JSON.parse(raw);
+      } catch {
+        // ignore
+      }
+    });
+    setSaves(arr);
+  }, [user, defaultSettings]);
+
+  // Load settings from storage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('praeverse_settings');
+      if (stored) {
+        setSettings({ ...defaultSettings, ...JSON.parse(stored) });
+      }
+    } catch {
+      // ignore
+    }
+  }, [defaultSettings]);
+
+  // Persist settings
+  useEffect(() => {
+    try {
+      localStorage.setItem('praeverse_settings', JSON.stringify(settings));
+    } catch {
+      // ignore
+    }
+    if (user) {
+      supabase
+        .from('user_profiles')
+        .upsert({ user_id: user.id, settings })
+        .catch(() => {});
+    }
+  }, [settings, user]);
 
   const loadPosition = useCallback((mapId: string) => {
     try {
@@ -55,9 +124,6 @@ export default function Home() {
     }
   }, [currentMap, loadPosition]);
 
-  const [user, setUser] = useState<User | null>(null);
-  const [email, setEmail] = useState('');
-
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
@@ -74,6 +140,35 @@ export default function Home() {
     };
   }, []);
 
+  // When user logs in, load settings and saves from Supabase
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    const fetchData = async () => {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('settings')
+        .eq('user_id', user.id)
+        .single();
+      if (profile?.settings) {
+        setSettings({ ...defaultSettings, ...profile.settings });
+      }
+      const { data: saveRows } = await supabase
+        .from('user_saves')
+        .select('slot,data,updated_at')
+        .eq('user_id', user.id);
+      if (saveRows) {
+        const arr: (SaveData | null)[] = [null, null, null];
+        for (const row of saveRows) {
+          arr[row.slot - 1] = { ...(row.data as SaveData), updatedAt: row.updated_at };
+        }
+        setSaves(arr);
+      }
+    };
+    fetchData().catch(() => {});
+  }, [user, defaultSettings]);
+
   const handleLogin = async () => {
     const { error } = await supabase.auth.signInWithOtp({ email });
     if (error) {
@@ -88,10 +183,30 @@ export default function Home() {
     setUser(null);
   };
 
+  const startDialogue = useCallback(
+    (text: string) => {
+      if (settings.animateDialogue) {
+        setDisplayDialogue('');
+        let i = 0;
+        const timer = setInterval(() => {
+          i++;
+          setDisplayDialogue(text.slice(0, i));
+          if (i >= text.length) {
+            clearInterval(timer);
+          }
+        }, 30);
+        return () => clearInterval(timer);
+      }
+      setDisplayDialogue(text);
+      return () => {};
+    },
+    [settings.animateDialogue]
+  );
+
   const handleClick = useCallback(
     (tile: Tile, isDouble = false) => {
       if (isDouble && tile.type === 'NPC' && tile.dialogueId) {
-        setDialogue(`NPC says: "This isn't the beginning. It's before that."`);
+        startDialogue(`NPC says: "This isn't the beginning. It's before that."`);
         return;
       }
 
@@ -102,7 +217,67 @@ export default function Home() {
         }
       }
     },
-    [player, grid]
+    [player, grid, startDialogue]
+  );
+
+  const handleSave = useCallback(
+    async (slot: number) => {
+      const data: SaveData = {
+        mapId: currentMap,
+        player,
+        items,
+        updatedAt: new Date().toISOString(),
+      };
+      if (user) {
+        await supabase
+          .from('user_saves')
+          .upsert({ user_id: user.id, slot, data, updated_at: data.updatedAt })
+          .catch(() => {});
+      } else {
+        try {
+          localStorage.setItem(`praeverse_slot_${slot}`, JSON.stringify(data));
+        } catch {}
+      }
+      setSaves((prev) => {
+        const arr = [...prev];
+        arr[slot - 1] = data;
+        return arr;
+      });
+    },
+    [currentMap, player, items, user]
+  );
+
+  const handleLoad = useCallback(
+    (slot: number) => {
+      const data = saves[slot - 1];
+      if (!data) return;
+      setCurrentMap(data.mapId);
+      setGrid(maps[data.mapId]);
+      setPlayer(data.player);
+      setItems(data.items);
+    },
+    [saves]
+  );
+
+  const handleDelete = useCallback(
+    async (slot: number) => {
+      if (user) {
+        await supabase
+          .from('user_saves')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('slot', slot)
+          .catch(() => {});
+      } else {
+        localStorage.removeItem(`praeverse_slot_${slot}`);
+      }
+      setSaves((prev) => {
+        const arr = [...prev];
+        arr[slot - 1] = null;
+        return arr;
+      });
+    },
+    [user]
   );
 
   // Step along the current path
@@ -119,9 +294,9 @@ export default function Home() {
           setCurrentMap(tile.destination);
         }
       }
-    }, 250);
+    }, movementDelay);
     return () => clearTimeout(timer);
-  }, [path, grid, setCurrentMap]);
+  }, [path, grid, setCurrentMap, movementDelay]);
 
   // Save player position whenever it changes
   useEffect(() => {
@@ -169,9 +344,10 @@ export default function Home() {
   }
 
   return (
-    <main>
-      <h1 className="title">Praeverse</h1>
-      <div className="grid">
+    <>
+      <main>
+        <h1 className="title">Praeverse</h1>
+        <div className="grid">
         {grid.map((row) =>
           row.map((tile) => {
 
@@ -199,6 +375,9 @@ export default function Home() {
                     style={{ backgroundColor: tile.npcColor || 'blue' }}
                   />
                 )}
+                {settings.showLabels && (
+                  <span className="tile-label">{tile.type}</span>
+                )}
               </div>
             );
           })
@@ -209,12 +388,64 @@ export default function Home() {
         />
       </div>
 
-      {dialogue && (
+      {displayDialogue && (
         <div className="dialogue">
-          {dialogue}
-          <button onClick={() => setDialogue(null)} aria-label="Close Dialogue">Close</button>
+          {displayDialogue}
+          <button
+              onClick={() => {
+              setDisplayDialogue(null);
+            }}
+            aria-label="Close Dialogue"
+          >
+            Close
+          </button>
         </div>
       )}
-    </main>
+      </main>
+      <div className="bottom-menu">
+        <button onClick={() => setActivePanel(activePanel === 'settings' ? null : 'settings')}>
+          Settings
+        </button>
+        <button onClick={() => setActivePanel(activePanel === 'items' ? null : 'items')}>
+          Items
+        </button>
+        <button onClick={() => setActivePanel(activePanel === 'save' ? null : 'save')}>
+          Save
+        </button>
+        <button onClick={() => setActivePanel(activePanel === 'load' ? null : 'load')}>
+          Load
+        </button>
+      </div>
+      {activePanel === 'settings' && (
+        <SettingsPanel
+          settings={settings}
+          setSettings={setSettings}
+          onMainMenu={() => setMenuVisible(true)}
+          onClose={() => setActivePanel(null)}
+          reset={() => {
+            setSettings(defaultSettings);
+            localStorage.removeItem('praeverse_settings');
+          }}
+        />
+      )}
+      {activePanel === 'items' && (
+        <ItemsPanel items={items} onClose={() => setActivePanel(null)} />
+      )}
+      {activePanel === 'save' && (
+        <SavePanel
+          saves={saves}
+          onSave={handleSave}
+          onClose={() => setActivePanel(null)}
+        />
+      )}
+      {activePanel === 'load' && (
+        <LoadPanel
+          saves={saves}
+          onLoad={handleLoad}
+          onDelete={handleDelete}
+          onClose={() => setActivePanel(null)}
+        />
+      )}
+    </>
   );
 }

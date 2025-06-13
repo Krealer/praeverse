@@ -201,3 +201,54 @@ h1.title {
     transform: scale(1);
   }
 }
+
+/* Bottom menu */
+.bottom-menu {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(20, 20, 20, 0.9);
+  border-top: 1px solid #444;
+  display: flex;
+  justify-content: space-around;
+  padding: 0.5rem 0;
+  z-index: 100;
+}
+.bottom-menu button {
+  background: #222;
+  border: 1px solid #444;
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+}
+
+.panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.panel {
+  background: #1e1e1e;
+  padding: 1rem;
+  border: 1px solid #555;
+  border-radius: 8px;
+  max-width: 90vw;
+}
+
+.tile-label {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  font-size: 0.5rem;
+  color: #fff;
+  pointer-events: none;
+}
