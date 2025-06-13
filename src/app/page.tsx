@@ -52,6 +52,24 @@ export default function Home() {
   const [grid] = useState<Tile[][]>(createGrid());
   const [player, setPlayer] = useState({ x: 1, y: 1 });
 
+  // Restore saved player position on first load
+  useEffect(() => {
+    const saved = localStorage.getItem('player-position');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (
+          typeof parsed.x === 'number' &&
+          typeof parsed.y === 'number'
+        ) {
+          setPlayer({ x: parsed.x, y: parsed.y });
+        }
+      } catch (err) {
+        console.error('Could not parse saved player position', err);
+      }
+    }
+  }, []);
+
   const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState('');
 
@@ -98,6 +116,11 @@ export default function Home() {
     if (tile.type === 'GROUND' && isAdjacent) {
       setPlayer({ x: tile.x, y: tile.y });
     }
+  }, [player]);
+
+  // Save player position whenever it changes
+  useEffect(() => {
+    localStorage.setItem('player-position', JSON.stringify(player));
   }, [player]);
 
   if (menuVisible) {
