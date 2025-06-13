@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { findPath } from '../lib/pathfinding';
+import { t } from '../lib/lang';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import type { Tile } from '../lib/types';
@@ -180,7 +181,7 @@ export default function Home() {
     if (error) {
       alert('Login error: ' + error.message);
     } else {
-      alert('Check your email for a magic login link.');
+      alert(t('checkEmail', settings.language));
     }
   };
 
@@ -335,36 +336,36 @@ export default function Home() {
     return (
       <div className="menu-screen">
         <h1 className="title">Praeverse</h1>
-        <button onClick={() => setMenuVisible(false)} aria-label="Start Game">▶ Play</button>
-        <button onClick={() => setShowHelp(true)} aria-label="How to Play">📖 How to Play</button>
+        <button onClick={() => setMenuVisible(false)} aria-label={t('play', settings.language)}>▶ {t('play', settings.language)}</button>
+        <button onClick={() => setShowHelp(true)} aria-label={t('howToPlay', settings.language)}>📖 {t('howToPlay', settings.language)}</button>
 
         {user ? (
           <>
-            <p>Logged in as: {user.email}</p>
-            <button onClick={handleLogout} aria-label="Log Out">🚪 Log Out</button>
+            <p>{t('loggedInAs', settings.language)} {user.email}</p>
+            <button onClick={handleLogout} aria-label={t('logOut', settings.language)}>🚪 {t('logOut', settings.language)}</button>
           </>
         ) : (
           <>
             <input
               type="email"
-              placeholder="Enter email"
+              placeholder={t('loginPrompt', settings.language)}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="menu-input"
             />
-            <button onClick={handleLogin} aria-label="Send Magic Link">🔐 Send Magic Link</button>
+            <button onClick={handleLogin} aria-label={t('sendMagicLink', settings.language)}>🔐 {t('sendMagicLink', settings.language)}</button>
           </>
         )}
 
         {showHelp && (
           <div className="modal">
-            <p><strong>How to Play:</strong></p>
+            <p><strong>{t('howToPlayTitle', settings.language)}</strong></p>
             <ul>
-              <li>Tap a gray tile to move.</li>
-              <li>Double tap a colored circle (NPC) to interact.</li>
-              <li>Dark tiles are walls — they block movement.</li>
+              <li>{t('instructionMove', settings.language)}</li>
+              <li>{t('instructionInteract', settings.language)}</li>
+              <li>{t('instructionWalls', settings.language)}</li>
             </ul>
-            <button onClick={() => setShowHelp(false)} aria-label="Close Help">Close</button>
+            <button onClick={() => setShowHelp(false)} aria-label={t('close', settings.language)}>{t('close', settings.language)}</button>
           </div>
         )}
       </div>
@@ -426,25 +427,25 @@ export default function Home() {
               onClick={() => {
               setDisplayDialogue(null);
             }}
-            aria-label="Close Dialogue"
+            aria-label={t('close', settings.language)}
           >
-            Close
+            {t('close', settings.language)}
           </button>
         </div>
       )}
       </main>
       <div className="bottom-menu">
         <button onClick={() => setActivePanel(activePanel === 'settings' ? null : 'settings')}>
-          Settings
+          {t('settings', settings.language)}
         </button>
         <button onClick={() => setActivePanel(activePanel === 'items' ? null : 'items')}>
-          Items
+          {t('items', settings.language)}
         </button>
         <button onClick={() => setActivePanel(activePanel === 'save' ? null : 'save')}>
-          Save
+          {t('save', settings.language)}
         </button>
         <button onClick={() => setActivePanel(activePanel === 'load' ? null : 'load')}>
-          Load
+          {t('load', settings.language)}
         </button>
       </div>
       {activePanel === 'settings' && (
@@ -460,13 +461,14 @@ export default function Home() {
         />
       )}
       {activePanel === 'items' && (
-        <ItemsPanel items={items} onClose={() => setActivePanel(null)} />
+        <ItemsPanel items={items} onClose={() => setActivePanel(null)} lang={settings.language} />
       )}
       {activePanel === 'save' && (
         <SavePanel
           saves={saves}
           onSave={handleSave}
           onClose={() => setActivePanel(null)}
+          lang={settings.language}
         />
       )}
       {activePanel === 'load' && (
@@ -475,6 +477,7 @@ export default function Home() {
           onLoad={handleLoad}
           onDelete={handleDelete}
           onClose={() => setActivePanel(null)}
+          lang={settings.language}
         />
       )}
     </>
