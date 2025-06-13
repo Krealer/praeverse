@@ -1,95 +1,188 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
+
+type TileType = 'GROUND' | 'WALL' | 'NPC';
+
+interface Tile {
+  x: number;
+  y: number;
+  type: TileType;
+  npcColor?: string;
+  dialogueId?: string;
+}
+
+const gridSize = 10;
+
+const createGrid = (): Tile[][] => {
+  const grid: Tile[][] = [];
+
+  for (let y = 0; y < gridSize; y++) {
+    const row: Tile[] = [];
+    for (let x = 0; x < gridSize; x++) {
+      if (
+        x === 0 || y === 0 || x === gridSize - 1 || y === gridSize - 1 ||
+        (x === 5 && y !== 2)
+      ) {
+        row.push({ x, y, type: 'WALL' });
+      } else if (x === 3 && y === 3) {
+        row.push({
+          x,
+          y,
+          type: 'NPC',
+          npcColor: '#2aa',
+          dialogueId: 'npc_1',
+        });
+      } else {
+        row.push({ x, y, type: 'GROUND' });
+      }
+    }
+    grid.push(row);
+  }
+
+  return grid;
+};
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [menuVisible, setMenuVisible] = useState(true);
+  const [showHelp, setShowHelp] = useState(false);
+  const [dialogue, setDialogue] = useState<string | null>(null);
+  const [grid] = useState<Tile[][]>(createGrid());
+  const [player, setPlayer] = useState({ x: 1, y: 1 });
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const [user, setUser] = useState<User | null>(null);
+  const [email, setEmail] = useState('');
+
+  // Load current user and handle auth changes
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) {
+      alert('Login error: ' + error.message);
+    } else {
+      alert('Check your email for a magic login link.');
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
+
+  const handleClick = (tile: Tile, isDouble = false) => {
+    const dx = Math.abs(tile.x - player.x);
+    const dy = Math.abs(tile.y - player.y);
+    const isAdjacent = dx + dy === 1;
+
+    if (isDouble && tile.type === 'NPC' && tile.dialogueId) {
+      setDialogue(`NPC says: "This isn't the beginning. It's before that."`);
+      return;
+    }
+
+    if (tile.type === 'GROUND' && isAdjacent) {
+      setPlayer({ x: tile.x, y: tile.y });
+    }
+  };
+
+  if (menuVisible) {
+    return (
+      <div className="menu-screen">
+        <h1 className="title">Praeverse</h1>
+        <button onClick={() => setMenuVisible(false)}>▶ Play</button>
+        <button onClick={() => setShowHelp(true)}>📖 How to Play</button>
+
+        {user ? (
+          <>
+            <p>Logged in as: {user.email}</p>
+            <button onClick={handleLogout}>🚪 Log Out</button>
+          </>
+        ) : (
+          <>
+            <input
+              type="email"
+              placeholder="Enter email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="menu-input"
             />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+            <button onClick={handleLogin}>🔐 Send Magic Link</button>
+          </>
+        )}
+
+        {showHelp && (
+          <div className="modal">
+            <p><strong>How to Play:</strong></p>
+            <ul>
+              <li>Tap a gray tile to move.</li>
+              <li>Double tap a colored circle (NPC) to interact.</li>
+              <li>Dark tiles are walls — they block movement.</li>
+            </ul>
+            <button onClick={() => setShowHelp(false)}>Close</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <main>
+      <h1 className="title">Praeverse</h1>
+      <div className="grid">
+        {grid.map((row) =>
+          row.map((tile) => {
+            const isPlayer = tile.x === player.x && tile.y === player.y;
+
+            return (
+              <div
+                key={`${tile.x}-${tile.y}`}
+                className={`tile ${tile.type.toLowerCase()}`}
+                style={{
+                  backgroundColor:
+                    tile.type === 'GROUND'
+                      ? '#999'
+                      : tile.type === 'WALL'
+                      ? '#333'
+                      : undefined,
+                }}
+                onClick={() => handleClick(tile)}
+                onDoubleClick={() => handleClick(tile, true)}
+              >
+                {tile.type === 'NPC' && (
+                  <div
+                    className="circle"
+                    style={{ backgroundColor: tile.npcColor || 'blue' }}
+                  />
+                )}
+                {isPlayer && <div className="circle player" />}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {dialogue && (
+        <div className="dialogue">
+          {dialogue}
+          <button onClick={() => setDialogue(null)}>Close</button>
         </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      )}
+    </main>
   );
 }

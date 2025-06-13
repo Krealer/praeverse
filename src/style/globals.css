@@ -1,0 +1,163 @@
+/* Reset and base styling */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background: #0e0e0e;
+  color: #f0f0f0;
+  font-family: 'Segoe UI', 'Courier New', monospace;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+h1.title {
+  font-size: 2rem;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  letter-spacing: 2px;
+  font-weight: 400;
+  color: #eaeaea;
+  text-transform: uppercase;
+}
+
+/* Grid system */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  width: 90vmin;
+  max-width: 450px;
+  aspect-ratio: 1 / 1;
+  border: 2px solid #444;
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  padding: 5px;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+}
+
+/* Tile base */
+.tile {
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease;
+}
+
+.tile:hover {
+  transform: scale(1.02);
+  cursor: pointer;
+}
+
+/* Tile backgrounds */
+.tile.ground {
+  background-color: #888;
+}
+
+.tile.wall {
+  background-color: #222;
+}
+
+.tile.npc {
+  background-color: transparent;
+}
+
+/* Circles for NPCs and player */
+.circle {
+  width: 70%;
+  height: 70%;
+  border-radius: 50%;
+  background-color: #555;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.1);
+  transition: background-color 0.2s;
+}
+
+.player {
+  background-color: #fff;
+  border: 2px solid #111;
+}
+
+/* Dialogue box */
+.dialogue {
+  margin-top: 1rem;
+  background: #1e1e1e;
+  padding: 1rem;
+  border: 1px solid #444;
+  border-radius: 8px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+/* Menu screen */
+.menu-screen {
+  margin-top: 6vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  animation: fadeIn 0.6s ease;
+}
+
+.menu-screen button {
+  padding: 0.6rem 1.4rem;
+  background: #222;
+  border: 1px solid #444;
+  color: white;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.menu-screen button:hover {
+  background-color: #333;
+}
+
+.menu-screen button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menu-input {
+  padding: 0.5rem;
+  border: 1px solid #444;
+  background: #111;
+  color: white;
+  border-radius: 6px;
+  font-size: 1rem;
+  width: 220px;
+}
+
+.modal {
+  margin-top: 1rem;
+  background: #2a2a2a;
+  padding: 1rem;
+  border: 1px solid #555;
+  border-radius: 8px;
+  max-width: 90vw;
+  text-align: left;
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
