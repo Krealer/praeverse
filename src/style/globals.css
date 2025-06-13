@@ -101,11 +101,12 @@ h1.title {
   position: absolute;
   top: 0;
   left: 0;
-  width: 7%;
-  height: 7%;
+  width: 8%;
+  height: 8%;
   display: flex;
   align-items: center;
   justify-content: center;
+  transform: translate(-50%, -50%);
   transition: top 0.25s ease, left 0.25s ease;
   pointer-events: none;
 }
