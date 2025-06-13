@@ -31,7 +31,31 @@ Then open [http://localhost:3000](http://localhost:3000).
 
 ## Deploying to Vercel
 
-Push your changes to trigger an automatic deployment on [Vercel](https://vercel.com/).
+The project is configured for automatic deployments on [Vercel](https://vercel.com/).
+Every push to the `main` branch updates production, while pushes to other
+branches create **Preview Deployments**.
+
+1. Create a feature branch and commit your changes:
+
+   ```bash
+   git checkout -b my-feature
+   # edit files then
+   git add .
+   git commit -m "Test: update feature"
+   git push origin my-feature
+   ```
+
+2. Vercel automatically builds the branch and provides a preview URL. You can
+   find the link in the Pull Request, the Vercel dashboard or via the
+   `vercel` CLI.
+
+3. (Optional) test locally using the Vercel CLI:
+
+   ```bash
+   vercel --prebuilt
+   ```
+
+If your local project is not linked to Vercel yet, run `vercel link` once.
 
 ## License
 
