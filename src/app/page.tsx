@@ -21,23 +21,37 @@ export default function Home() {
     setGrid(maps[currentMap]);
   }, [currentMap]);
 
-  // Restore saved player position on first load
-  useEffect(() => {
-    const saved = localStorage.getItem('player-position');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (
-          typeof parsed.x === 'number' &&
-          typeof parsed.y === 'number'
-        ) {
-          setPlayer({ x: parsed.x, y: parsed.y });
-        }
-      } catch (err) {
-        console.error('Could not parse saved player position', err);
+  const loadPosition = useCallback((mapId: string) => {
+    try {
+      const saved = localStorage.getItem(`praeverse_position_${mapId}`);
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+        return { x: parsed.x, y: parsed.y };
       }
+    } catch {
+      // ignore read errors
+    }
+    return null;
+  }, []);
+
+  const savePosition = useCallback((mapId: string, pos: { x: number; y: number }) => {
+    try {
+      localStorage.setItem(`praeverse_position_${mapId}`, JSON.stringify(pos));
+    } catch {
+      // ignore write errors
     }
   }, []);
+
+  // Restore player position when map changes
+  useEffect(() => {
+    const stored = loadPosition(currentMap);
+    if (stored) {
+      setPlayer(stored);
+    } else {
+      setPlayer({ x: 1, y: 1 });
+    }
+  }, [currentMap, loadPosition]);
 
   const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState('');
@@ -85,7 +99,6 @@ export default function Home() {
 
       if (tile.type === 'DOOR' && isAdjacent && tile.destination) {
         setCurrentMap(tile.destination);
-        setPlayer({ x: 1, y: 1 });
         return;
       }
 
@@ -98,8 +111,8 @@ export default function Home() {
 
   // Save player position whenever it changes
   useEffect(() => {
-    localStorage.setItem('player-position', JSON.stringify(player));
-  }, [player]);
+    savePosition(currentMap, player);
+  }, [player, currentMap, savePosition]);
 
   if (menuVisible) {
     return (
