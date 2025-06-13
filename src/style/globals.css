@@ -68,6 +68,10 @@ h1.title {
   background-color: #222;
 }
 
+.tile.door {
+  background-color: purple;
+}
+
 .tile.npc {
   background-color: transparent;
 }
