@@ -85,11 +85,17 @@ export default function Home() {
       // ignore
     }
     if (user) {
-      supabase
+  (async () => {
+    try {
+      await supabase
         .from('user_profiles')
-        .upsert({ user_id: user.id, settings })
-        .catch(() => {});
+        .upsert({ user_id: user.id, settings });
+    } catch (err) {
+      console.error('Failed to save settings to Supabase:', err);
     }
+  })();
+ }
+
   }, [settings, user]);
 
   const loadPosition = useCallback((mapId: string) => {
@@ -221,31 +227,44 @@ export default function Home() {
   );
 
   const handleSave = useCallback(
-    async (slot: number) => {
-      const data: SaveData = {
-        mapId: currentMap,
-        player,
-        items,
-        updatedAt: new Date().toISOString(),
-      };
-      if (user) {
+  async (slot: number) => {
+    const data: SaveData = {
+      mapId: currentMap,
+      player,
+      items,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (user) {
+      try {
         await supabase
           .from('user_saves')
-          .upsert({ user_id: user.id, slot, data, updated_at: data.updatedAt })
-          .catch(() => {});
-      } else {
-        try {
-          localStorage.setItem(`praeverse_slot_${slot}`, JSON.stringify(data));
-        } catch {}
+          .upsert({
+            user_id: user.id,
+            slot,
+            data,
+            updated_at: data.updatedAt,
+          });
+      } catch (err) {
+        console.error(`❌ Failed to save slot ${slot} to Supabase:`, err);
       }
-      setSaves((prev) => {
-        const arr = [...prev];
-        arr[slot - 1] = data;
-        return arr;
-      });
-    },
-    [currentMap, player, items, user]
-  );
+    } else {
+      try {
+        localStorage.setItem(`praeverse_slot_${slot}`, JSON.stringify(data));
+      } catch (err) {
+        console.warn(`⚠️ Failed to save slot ${slot} to localStorage:`, err);
+      }
+    }
+
+    setSaves((prev) => {
+      const arr = [...prev];
+      arr[slot - 1] = data;
+      return arr;
+    });
+  },
+  [currentMap, player, items, user]
+);
+
 
   const handleLoad = useCallback(
     (slot: number) => {
@@ -260,25 +279,34 @@ export default function Home() {
   );
 
   const handleDelete = useCallback(
-    async (slot: number) => {
-      if (user) {
+  async (slot: number) => {
+    if (user) {
+      try {
         await supabase
           .from('user_saves')
           .delete()
           .eq('user_id', user.id)
-          .eq('slot', slot)
-          .catch(() => {});
-      } else {
-        localStorage.removeItem(`praeverse_slot_${slot}`);
+          .eq('slot', slot);
+      } catch (err) {
+        console.error(`❌ Failed to delete save slot ${slot} from Supabase:`, err);
       }
-      setSaves((prev) => {
-        const arr = [...prev];
-        arr[slot - 1] = null;
-        return arr;
-      });
-    },
-    [user]
-  );
+    } else {
+      try {
+        localStorage.removeItem(`praeverse_slot_${slot}`);
+      } catch (err) {
+        console.warn(`⚠️ Failed to remove local save slot ${slot}:`, err);
+      }
+    }
+
+    setSaves((prev) => {
+      const arr = [...prev];
+      arr[slot - 1] = null;
+      return arr;
+    });
+  },
+  [user]
+);
+
 
   // Step along the current path
   useEffect(() => {
