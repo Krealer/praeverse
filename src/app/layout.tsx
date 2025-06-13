@@ -1,5 +1,4 @@
-import '../style/globals.css'; // ✅ Correct relative path to your CSS
-
+import '../style/globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -14,6 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      </head>
       <body>{children}</body>
     </html>
   );
