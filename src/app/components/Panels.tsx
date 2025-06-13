@@ -46,34 +46,54 @@ export function SettingsPanel({ settings, setSettings, onMainMenu, onClose, rese
   };
   return (
     <Panel onClose={onClose} title="Settings">
-      <button onClick={onMainMenu}>Back to main menu</button>
-      <label>
-        Movement speed:
-        <select value={settings.movement} onChange={(e) => handleChange('movement', e.target.value as Settings['movement'])}>
-          <option value="slow">Slow</option>
-          <option value="normal">Normal</option>
-          <option value="fast">Fast</option>
-        </select>
-      </label>
-      <label>
-        Language:
-        <select value={settings.language} onChange={(e) => handleChange('language', e.target.value)}>
-          <option value="en">English</option>
-          <option value="nl">Dutch</option>
-          <option value="jp">Japanese</option>
-          <option value="ru">Russian</option>
-          <option value="ar">Arabic</option>
-        </select>
-      </label>
-      <label>
-        <input type="checkbox" checked={settings.showLabels} onChange={(e) => handleChange('showLabels', e.target.checked)} />
-        Show tile labels
-      </label>
-      <label>
-        <input type="checkbox" checked={settings.animateDialogue} onChange={(e) => handleChange('animateDialogue', e.target.checked)} />
-        Dialogue animation
-      </label>
-      <button onClick={reset}>Reset all settings</button>
+      <div className="settings-panel">
+        <button onClick={onMainMenu} aria-label="Back to Main Menu">🔙 Back to Main Menu</button>
+        <label className="setting-group">
+          ⏩ Movement Speed
+          <select
+            aria-label="Movement Speed"
+            value={settings.movement}
+            onChange={(e) => handleChange('movement', e.target.value as Settings['movement'])}
+          >
+            <option value="slow">Slow</option>
+            <option value="normal">Normal</option>
+            <option value="fast">Fast</option>
+          </select>
+        </label>
+        <label className="setting-group">
+          🌍 Language
+          <select
+            aria-label="Language"
+            value={settings.language}
+            onChange={(e) => handleChange('language', e.target.value)}
+          >
+            <option value="en">English</option>
+            <option value="nl">Dutch</option>
+            <option value="jp">Japanese</option>
+            <option value="ru">Russian</option>
+            <option value="ar">Arabic</option>
+          </select>
+        </label>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={settings.showLabels}
+            onChange={(e) => handleChange('showLabels', e.target.checked)}
+            aria-label="Show Tile Labels"
+          />
+          🧩 Show Tile Labels
+        </label>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={settings.animateDialogue}
+            onChange={(e) => handleChange('animateDialogue', e.target.checked)}
+            aria-label="Dialogue Animation"
+          />
+          💬 Dialogue Animation
+        </label>
+        <button onClick={reset} aria-label="Reset All Settings">♻️ Reset All Settings</button>
+      </div>
     </Panel>
   );
 }

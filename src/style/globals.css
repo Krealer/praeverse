@@ -253,3 +253,68 @@ h1.title {
   color: #fff;
   pointer-events: none;
 }
+
+/* Settings panel styling */
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.settings-panel button {
+  width: 100%;
+  padding: 0.6rem 1.4rem;
+  background: #222;
+  border: 1px solid #444;
+  color: #fff;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.settings-panel button:hover {
+  background-color: #333;
+}
+
+.settings-panel select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #444;
+  background: #111;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #111;
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.checkbox-label:hover {
+  background-color: #222;
+}
+
+.checkbox-label input[type='checkbox'] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #9b2aff;
+}
